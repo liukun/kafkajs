@@ -7,9 +7,23 @@ const {
 } = require('testHelpers')
 
 const createProducer = require('../../producer')
+const sleep = require('../../utils/sleep')
 
 describe('Cluster > fetchTopicsOffset', () => {
   let cluster, topic, producer
+
+  const sendSampleMessages = async () => {
+    await producer.send({
+      topic,
+      acks: 1,
+      messages: [
+        { key: 'k1', value: 'v1' },
+        { key: 'k2', value: 'v2' },
+        { key: 'k3', value: 'v3' },
+        { key: 'k4', value: 'v4' },
+      ],
+    })
+  }
 
   beforeEach(async () => {
     topic = `test-topic-${secureRandom()}`
@@ -25,16 +39,7 @@ describe('Cluster > fetchTopicsOffset', () => {
       createPartitioner: createModPartitioner,
     })
 
-    await producer.send({
-      topic,
-      acks: 1,
-      messages: [
-        { key: 'k1', value: 'v1' },
-        { key: 'k2', value: 'v2' },
-        { key: 'k3', value: 'v3' },
-        { key: 'k4', value: 'v4' },
-      ],
-    })
+    await sendSampleMessages()
   })
 
   afterEach(async () => {
@@ -67,5 +72,47 @@ describe('Cluster > fetchTopicsOffset', () => {
     ])
 
     expect(result).toEqual([{ topic, partitions: [{ partition: 0, offset: '0' }] }])
+  })
+
+  test('returns correct offests if fromTimestamp', async () => {
+    await sleep(10)
+    const fromTimestamp = Date.now()
+    await sendSampleMessages()
+    const resultTimestamp = await cluster.fetchTopicsOffset([
+      {
+        topic,
+        fromTimestamp,
+        partitions: [{ partition: 0 }, { partition: 1 }, { partition: 2 }],
+      },
+    ])
+
+    expect(resultTimestamp).toEqual([
+      {
+        topic,
+        partitions: expect.arrayContaining([
+          { partition: 0, offset: '1' },
+          { partition: 1, offset: '2' },
+          { partition: 2, offset: '1' },
+        ]),
+      },
+    ])
+
+    const result = await cluster.fetchTopicsOffset([
+      {
+        topic,
+        partitions: [{ partition: 0 }, { partition: 1 }, { partition: 2 }],
+      },
+    ])
+
+    expect(result).toEqual([
+      {
+        topic,
+        partitions: expect.arrayContaining([
+          { partition: 0, offset: '2' },
+          { partition: 1, offset: '4' },
+          { partition: 2, offset: '2' },
+        ]),
+      },
+    ])
   })
 })

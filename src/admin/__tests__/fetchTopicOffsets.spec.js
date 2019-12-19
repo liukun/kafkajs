@@ -1,5 +1,6 @@
 const createAdmin = require('../index')
 const createProducer = require('../../producer')
+const sleep = require('../../utils/sleep')
 const {
   secureRandom,
   createCluster,
@@ -38,11 +39,11 @@ describe('Admin', () => {
       )
     })
 
-    test('returns the current topic offset', async () => {
+    const sendMessages = async n => {
       await admin.connect()
       await producer.connect()
 
-      const messages = Array(100)
+      const messages = Array(n)
         .fill()
         .map(() => {
           const value = secureRandom()
@@ -50,9 +51,23 @@ describe('Admin', () => {
         })
 
       await producer.send({ acks: 1, topic: topicName, messages })
-      const offsets = await admin.fetchTopicOffsets(topicName)
+    }
 
+    test('returns the current topic offset', async () => {
+      await sendMessages(100)
+      const offsets = await admin.fetchTopicOffsets(topicName)
       expect(offsets).toEqual([{ partition: 0, offset: '100', low: '0', high: '100' }])
+    })
+
+    test('returns the offsets from timestamp', async () => {
+      await sendMessages(10)
+      await sleep(10)
+      const fromTimestamp = Date.now()
+      await sendMessages(10)
+      const offsetsFromTimestamp = await admin.fetchTopicOffsets(topicName, fromTimestamp)
+      expect(offsetsFromTimestamp).toEqual([{ partition: 0, offset: '10' }])
+      const offsets = await admin.fetchTopicOffsets(topicName)
+      expect(offsets).toEqual([{ partition: 0, offset: '20', low: '0', high: '20' }])
     })
   })
 })

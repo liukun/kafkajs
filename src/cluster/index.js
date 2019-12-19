@@ -389,19 +389,23 @@ module.exports = class Cluster {
     const topicConfigurations = {}
 
     const addDefaultOffset = topic => partition => {
-      const { fromBeginning } = topicConfigurations[topic]
-      return { ...partition, timestamp: this.defaultOffset({ fromBeginning }) }
+      const { timestamp } = topicConfigurations[topic]
+      return { ...partition, timestamp }
     }
 
     // Index all topics and partitions per leader (nodeId)
     for (const topicData of topics) {
-      const { topic, partitions, fromBeginning } = topicData
+      const { topic, partitions, fromBeginning, fromTimestamp } = topicData
       const partitionsPerLeader = this.findLeaderForPartitions(
         topic,
         partitions.map(p => p.partition)
       )
+      let timestamp = fromTimestamp
+      if (timestamp == null) {
+        timestamp = this.defaultOffset({ fromBeginning })
+      }
 
-      topicConfigurations[topic] = { fromBeginning }
+      topicConfigurations[topic] = { timestamp }
 
       keys(partitionsPerLeader).map(nodeId => {
         partitionsPerBroker[nodeId] = partitionsPerBroker[nodeId] || {}

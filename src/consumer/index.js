@@ -144,7 +144,7 @@ module.exports = ({
    * @param {boolean} [fromBeginning=false]
    * @return {Promise}
    */
-  const subscribe = async ({ topic, fromBeginning = false }) => {
+  const subscribe = async ({ topic, fromBeginning = false, fromTimestamp = null }) => {
     if (consumerGroup) {
       throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
     }
@@ -180,7 +180,7 @@ module.exports = ({
     }
 
     for (const t of topicsToSubscribe) {
-      topics[t] = { fromBeginning }
+      topics[t] = { fromBeginning, fromTimestamp }
     }
 
     await cluster.addMultipleTargetTopics(topicsToSubscribe)

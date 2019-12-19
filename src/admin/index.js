@@ -177,7 +177,7 @@ module.exports = ({
    * @param {string} topic
    */
 
-  const fetchTopicOffsets = async topic => {
+  const fetchTopicOffsets = async (topic, fromTimestamp) => {
     if (!topic || typeof topic !== 'string') {
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
     }
@@ -190,6 +190,21 @@ module.exports = ({
         await cluster.refreshMetadataIfNecessary()
 
         const metadata = cluster.findTopicPartitionMetadata(topic)
+        if (fromTimestamp != null) {
+          const offsets = await cluster.fetchTopicsOffset([
+            {
+              topic,
+              fromTimestamp,
+              partitions: metadata.map(p => ({ partition: p.partitionId })),
+            },
+          ])
+          const { partitions } = offsets.pop()
+          return partitions.map(({ partition, offset }) => ({
+            partition,
+            offset,
+          }))
+        }
+
         const high = await cluster.fetchTopicsOffset([
           {
             topic,

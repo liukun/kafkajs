@@ -137,6 +137,7 @@ export type Cluster = {
       topic: string
       partitions: Array<{ partition: number }>
       fromBeginning: boolean
+      fromTimestamp: number
     }>
   ): Promise<{ topic: string; partitions: Array<{ partition: number; offset: string }> }>
 }
@@ -303,7 +304,8 @@ export type Admin = {
     topic: string
   }): Promise<Array<{ partition: number; offset: string; metadata: string | null }>>
   fetchTopicOffsets(
-    topic: string
+    topic: string,
+    fromTimestamp?: number
   ): Promise<Array<{ partition: number; offset: string; high: string; low: string }>>
   setOffsets(options: { groupId: string; topic: string; partitions: SeekEntry[] }): Promise<void>
   resetOffsets(options: { groupId: string; topic: string; earliest: boolean }): Promise<void>
@@ -617,7 +619,11 @@ export type ConsumerEachBatchPayload = EachBatchPayload
 export type Consumer = {
   connect(): Promise<void>
   disconnect(): Promise<void>
-  subscribe(topic: { topic: string | RegExp; fromBeginning?: boolean }): Promise<void>
+  subscribe(topic: {
+    topic: string | RegExp
+    fromBeginning?: boolean
+    fromTimestamp?: number
+  }): Promise<void>
   stop(): Promise<void>
   run(config?: {
     autoCommit?: boolean
