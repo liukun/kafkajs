@@ -400,10 +400,8 @@ module.exports = class Cluster {
         topic,
         partitions.map(p => p.partition)
       )
-      let timestamp = fromTimestamp
-      if (timestamp == null) {
-        timestamp = this.defaultOffset({ fromBeginning })
-      }
+      const timestamp =
+        fromTimestamp != null ? fromTimestamp : this.defaultOffset({ fromBeginning })
 
       topicConfigurations[topic] = { timestamp }
 

@@ -7,7 +7,6 @@ const {
 } = require('testHelpers')
 
 const createProducer = require('../../producer')
-const sleep = require('../../utils/sleep')
 
 describe('Cluster > fetchTopicsOffset', () => {
   let cluster, topic, producer
@@ -74,8 +73,7 @@ describe('Cluster > fetchTopicsOffset', () => {
     expect(result).toEqual([{ topic, partitions: [{ partition: 0, offset: '0' }] }])
   })
 
-  test('returns correct offests if fromTimestamp', async () => {
-    await sleep(10)
+  test('returns correct offsets if fromTimestamp', async () => {
     const fromTimestamp = Date.now()
     await sendSampleMessages()
     const resultTimestamp = await cluster.fetchTopicsOffset([

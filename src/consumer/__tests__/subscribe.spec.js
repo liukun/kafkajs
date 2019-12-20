@@ -10,6 +10,7 @@ const {
 
 const createConsumer = require('../index')
 const createProducer = require('../../producer')
+const sleep = require('../../utils/sleep')
 
 describe('Consumer', () => {
   let groupId, cluster, consumer, producer
@@ -93,6 +94,44 @@ describe('Consumer', () => {
         'value-br',
         'value-se',
       ])
+    })
+  })
+
+  describe('with fromTimestamp', () => {
+    const topic = `subs-ts-${secureRandom()}`
+    const sendMessages = async (n, start) => {
+      await producer.connect()
+
+      const messages = Array(n)
+        .fill()
+        .map((v, i) => {
+          return { key: `key-${start + i}`, value: `v-${start}` }
+        })
+
+      await producer.send({ acks: 1, topic, messages })
+    }
+
+    it('subscribes since the timestamp', async () => {
+      sendMessages(10, 0)
+      await sleep(100)
+
+      const fromTimestamp = Date.now()
+      sendMessages(10, 100)
+      sendMessages(10, 200)
+      const messagesConsumed = []
+      await consumer.connect()
+      await consumer.subscribe({
+        topic,
+        fromTimestamp,
+      })
+      consumer.run({
+        eachMessage: async event => {
+          messagesConsumed.push(event.message)
+        },
+      })
+      await waitForConsumerToJoinGroup(consumer)
+      await waitForMessages(messagesConsumed, { number: 1 })
+      await expect(messagesConsumed[0].key.toString()).toEqual('key-100')
     })
   })
 })

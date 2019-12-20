@@ -1,6 +1,5 @@
 const createAdmin = require('../index')
 const createProducer = require('../../producer')
-const sleep = require('../../utils/sleep')
 const {
   secureRandom,
   createCluster,
@@ -61,7 +60,6 @@ describe('Admin', () => {
 
     test('returns the offsets from timestamp', async () => {
       await sendMessages(10)
-      await sleep(10)
       const fromTimestamp = Date.now()
       await sendMessages(10)
       const offsetsFromTimestamp = await admin.fetchTopicOffsets(topicName, fromTimestamp)
